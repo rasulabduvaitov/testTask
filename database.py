@@ -1,30 +1,28 @@
 import os
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy.orm import sessionmaker
 
-# Load environment variables from .env file
 load_dotenv()
-
-# Construct the DATABASE_URL from .env variables
+# Database configuration
 DATABASE_URL = f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@" \
                f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
 
-# Create an async engine
-engine = create_async_engine(DATABASE_URL, echo=True)
-
-# Async sessionmaker
+# Async SQLAlchemy engine and session for asynchronous access
+async_engine = create_async_engine(DATABASE_URL, echo=True)
 AsyncSessionLocal = sessionmaker(
-    bind=engine,
-    expire_on_commit=False,
-    class_=AsyncSession
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False
 )
 
-# Dependency to get the database session
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
+# Synchronous SQLAlchemy engine and session for synchronous access
+sync_engine = create_engine(DATABASE_URL.replace("asyncpg", "psycopg2"), echo=True)
+SyncSessionLocal = sessionmaker(bind=sync_engine)
 
-
+# Define base model for SQLAlchemy
 Base = declarative_base()

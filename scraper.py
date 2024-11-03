@@ -5,6 +5,9 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
 
+from database import AsyncSessionLocal, SyncSessionLocal
+from models import Product
+
 
 class ProductScraperTexnoMart:
     def __init__(self):
@@ -56,7 +59,22 @@ class ProductScraperTexnoMart:
                 "description": description_text,
             })
 
+        await self.save_to_db(products)
         return products
+
+    async def save_to_db(self, products):
+        async with AsyncSessionLocal() as session:
+            async with session.begin():
+                for product_data in products:
+                    product = Product(
+                        name=product_data["name"],
+                        price=product_data["price"],
+                        category="TexnoMart",
+                        image_url=product_data["image_url"],
+                        description=product_data["description"]
+                    )
+                    session.add(product)
+            await session.commit()
 
     async def scrape_multiple_pages(self, urls):
         async with aiohttp.ClientSession() as session:
@@ -117,11 +135,25 @@ class ProductScraperMediaPark:
                 "image_url": image_url,
                 "description": description,
             })
-
+        self.save_to_db(products_data)
         return products_data
+
+    def save_to_db(self, products):
+        with SyncSessionLocal() as session:
+            for product_data in products:
+                product = Product(
+                    name=product_data["name"],
+                    price=product_data["price"],
+                    category="MediaPark",
+                    image_url=product_data["image_url"],
+                    description=product_data["description"]
+                )
+                session.add(product)
+            session.commit()
 
     def close(self):
         self.driver.quit()
+
 
 
 

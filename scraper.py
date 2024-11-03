@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 import aiohttp
 import asyncio
 from selenium import webdriver
@@ -25,6 +27,8 @@ class ProductScraperTexnoMart:
         html_content = await self.fetch_page_content(url, session)
         if html_content is None:
             return []
+
+        category = self.category_from_url(url)
 
         soup = BeautifulSoup(html_content, 'html.parser')
         products_box = soup.select("div.products-box div.col-3")
@@ -56,11 +60,18 @@ class ProductScraperTexnoMart:
                 "name": name,
                 "price": price,
                 "image_url": image_url,
+                "category": category,  # Pass the category extracted from the URL
                 "description": description_text,
             })
 
         await self.save_to_db(products)
         return products
+
+    def category_from_url(self, url):
+        """Extracts the category name from the URL."""
+        path = urlparse(url).path
+        category = path.split('/')[2]  # Assumes the category is the second segment in the URL path
+        return category.replace("-", " ").capitalize()
 
     async def save_to_db(self, products):
         async with AsyncSessionLocal() as session:
@@ -69,7 +80,7 @@ class ProductScraperTexnoMart:
                     product = Product(
                         name=product_data["name"],
                         price=product_data["price"],
-                        category="TexnoMart",
+                        category=product_data["category"],
                         image_url=product_data["image_url"],
                         description=product_data["description"]
                     )
@@ -115,6 +126,8 @@ class ProductScraperMediaPark:
         html_content = self.driver.page_source
         soup = BeautifulSoup(html_content, 'html.parser')
 
+        category = self.category_from_url(url)
+
         products_data = []
         product_cards = soup.find_all("a", class_="product-cart")
 
@@ -126,7 +139,6 @@ class ProductScraperMediaPark:
             image_el = product.find("img", class_="product-image")
             image_url = image_el["src"] if image_el else "N/A"
             description = name
-            category = "N/A"
 
             products_data.append({
                 "name": name,
@@ -138,13 +150,19 @@ class ProductScraperMediaPark:
         self.save_to_db(products_data)
         return products_data
 
+    def category_from_url(self, url):
+        """Extracts the category name from the URL."""
+        path = urlparse(url).path
+        category = path.split('/')[3]  # Assumes the category is the third segment in the URL path
+        return category.replace("-", " ").capitalize()
+
     def save_to_db(self, products):
         with SyncSessionLocal() as session:
             for product_data in products:
                 product = Product(
                     name=product_data["name"],
                     price=product_data["price"],
-                    category="MediaPark",
+                    category=product_data["category"],
                     image_url=product_data["image_url"],
                     description=product_data["description"]
                 )

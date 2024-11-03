@@ -39,7 +39,6 @@ class ProductScraperTexnoMart:
                 price = None
 
             image_tag = product.select_one("img.product-image")
-            print(image_tag)
             image_url = image_tag["data-src"] if image_tag else "N/A"
 
             description = []
@@ -72,7 +71,7 @@ class ProductScraperTexnoMart:
 
 
 
-class ProductScraper:
+class ProductScraperMediaPark:
     def __init__(self, headless=True):
         chrome_options = Options()
         if headless:

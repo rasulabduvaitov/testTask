@@ -1,61 +1,37 @@
-# import asyncio
-# from scraper import ProductScraper
-#
-#
-# async def main():
-#     urls_texno_park = [
-#         "https://texnomart.uz/katalog/noutbuki/",
-#         "https://texnomart.uz/katalog/smartfony/",
-#         "https://texnomart.uz/katalog/holodilniki/"
-#     ]
-#
-#     # urls_media_park = [
-#     #     "https://mediapark.uz/products/category/apple-249",
-#     #     "https://mediapark.uz/products/category/televizory-i-smart-televizory-8/televizory-307",
-#     #     "https://mediapark.uz/products/category/gadzhety-18/smart-chasy-51"
-#     # ]
-#
-#     # Instantiate the scrapers
-#     scraper_texno_park = ProductScraper()
-#     # scraper_media_park = ProductScraperMediaPark()
-#
-#     # Scrape and save data for TexnoPark
-#     products_texno_park = await scraper_texno_park.scrape_multiple_pages(urls_texno_park)
-#
-#     # Scrape and save data for MediaPark
-#     # products_media_park = await scraper_media_park.scrape_multiple_pages(urls_media_park)
-#     print(products_texno_park)
-#
-#     # Print results for verification
-#     # for product in products_media_park:
-#     #     print("Media Park:", product)
-#
-#     # for product in products_texno_park:
-#     #     print("Texno Park:", product)
-#
-#
-# if __name__ == '__main__':
-#     asyncio.run(main())
-
 import asyncio
-from scraper import ProductScraper
-
+from scraper import ProductScraperMediaPark, ProductScraperTexnoMart
 
 async def main():
-    # List of URLs to scrape
-    urls = [
+    # List of URLs to scrape for TexnoMart and MediaPark
+    urls_texno = [
         "https://texnomart.uz/katalog/noutbuki/",
         "https://texnomart.uz/katalog/smartfony/",
         # Add more URLs here as needed
     ]
 
-    scraper = ProductScraper()
-    products = await scraper.scrape_multiple_pages(urls)
+    urls_media = [
+        "https://mediapark.uz/products/category/noutbuki-i-ultrabuki-22/noutbuki-313",
+        "https://mediapark.uz/products/category/stiralnye-i-sushilnye-mashiny-735/stiralnye-mashiny-70"
 
-    # Print results
-    for product in products:
-        print(product)
+    ]
 
+    # Instantiate TexnoMart scraper
+    scraper_texno = ProductScraperTexnoMart()
+    products_texno = await scraper_texno.scrape_multiple_pages(urls_texno)
+    for product in products_texno:
+        print("TexnoMart:", product)
 
-# Run the scraper
+    # Instantiate MediaPark scraper
+    scraper_media = ProductScraperMediaPark(headless=True)
+    try:
+        # Scrape data from each URL in the `urls_media` list individually
+        for url in urls_media:
+            products_media = scraper_media.extract_product_data(url)
+            for product in products_media:
+                print("Media Park:", product)
+    finally:
+        # Ensure the browser is closed
+        scraper_media.close()
+
+# Run the main function
 asyncio.run(main())

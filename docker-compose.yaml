@@ -1,44 +1,35 @@
+version: '3.8'
+
 services:
   db:
     image: postgres:16
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    expose:
-      - 5432
     ports:
       - "${DOCKER_POSTGRES_PORT:-5433}:5432"
     networks:
       - main
     restart: always
 
-
-#  web:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    entrypoint: /app/docker-entrypoint.sh
-#    env_file:
-#      .env
-#    volumes:
-#      - /var/www/RecruitmentBackend/media:/app/media
-#      - /var/www/RecruitmentBackend/static:/app/static
-#    expose:
-#      - "${DOCKER_BACKEND_PORT:-8000}"
-#    ports:
-#      - "${DOCKER_BACKEND_PORT:-8000}:8000"
-#    networks:
-#      - main
-#    depends_on:
-#      - redis
-#    restart: always
-
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: /app/docker-entrypoint.sh
+    env_file:
+      - .env  # Ensure this .env file has all necessary environment variables, including DB settings
+    ports:
+      - "${DOCKER_BACKEND_PORT:-8000}:8000"
+    networks:
+      - main
+    depends_on:
+      - db
 
 volumes:
-#  media:
   postgres_data:
 
 networks:

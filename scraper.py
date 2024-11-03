@@ -1,9 +1,11 @@
+import os
 from urllib.parse import urlparse
 
 import aiohttp
 import asyncio
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import time
 
@@ -100,14 +102,108 @@ class ProductScraperTexnoMart:
 
 
 
+# class ProductScraperMediaPark:
+'''
+    TODO
+    if you run locally uncomment this class and comment ↓	
+    because this class can't work in linux 
+'''
+#     def __init__(self, headless=True):
+#         chrome_options = Options()
+#         if headless:
+#             chrome_options.add_argument("--headless")
+#         chrome_options.add_argument("--no-sandbox")
+#         chrome_options.add_argument("--disable-dev-shm-usage")
+#         self.driver = webdriver.Chrome(options=chrome_options)
+#
+#     def scroll_to_load_all_content(self, scroll_pause_time=2):
+#         last_height = self.driver.execute_script("return document.body.scrollHeight")
+#
+#         while True:
+#             self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+#             time.sleep(scroll_pause_time)
+#             new_height = self.driver.execute_script("return document.body.scrollHeight")
+#             if new_height == last_height:
+#                 break
+#             last_height = new_height
+#
+#     def extract_product_data(self, url):
+#         self.driver.get(url)
+#         self.scroll_to_load_all_content()
+#         html_content = self.driver.page_source
+#         soup = BeautifulSoup(html_content, 'html.parser')
+#
+#         category = self.category_from_url(url)
+#
+#         products_data = []
+#         product_cards = soup.find_all("a", class_="product-cart")
+#
+#         for product in product_cards:
+#             name = product.find("p", class_="text-dark").text.strip()
+#             price_element = product.find("span", {"price": True})
+#             price = int(price_element["price"]) if price_element and price_element.get("price") else None
+#
+#             image_el = product.find("img", class_="product-image")
+#             image_url = image_el["src"] if image_el else "N/A"
+#             description = name
+#
+#             products_data.append({
+#                 "name": name,
+#                 "price": price,
+#                 "category": category,
+#                 "image_url": image_url,
+#                 "description": description,
+#             })
+#         self.save_to_db(products_data)
+#         return products_data
+#
+#     def category_from_url(self, url):
+#         """Extracts the category name from the URL."""
+#         path = urlparse(url).path
+#         category = path.split('/')[3]  # Assumes the category is the third segment in the URL path
+#         return category.replace("-", " ").capitalize()
+#
+#     def save_to_db(self, products):
+#         with SyncSessionLocal() as session:
+#             for product_data in products:
+#                 product = Product(
+#                     name=product_data["name"],
+#                     price=product_data["price"],
+#                     category=product_data["category"],
+#                     image_url=product_data["image_url"],
+#                     description=product_data["description"]
+#                 )
+#                 session.add(product)
+#             session.commit()
+#
+#     def close(self):
+#         self.driver.quit()
+
+
+
+
 class ProductScraperMediaPark:
+    '''
+    TODO
+    if you run locally comment this class and uncomment ↑
+    '''
     def __init__(self, headless=True):
+        # Configure options for headless mode if required
         chrome_options = Options()
         if headless:
             chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        self.driver = webdriver.Chrome(options=chrome_options)
+
+        # Set up ChromeDriver and Chrome paths from environment
+        chrome_driver_path = os.getenv("CHROME_DRIVER", "/usr/bin/chromedriver")
+        chrome_options.binary_location = os.getenv("CHROME_BIN", "/usr/bin/chromium")
+
+        # Use Service to specify the path to ChromeDriver
+        service = Service(chrome_driver_path)
+
+        # Initialize the WebDriver with the service and options
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
 
     def scroll_to_load_all_content(self, scroll_pause_time=2):
         last_height = self.driver.execute_script("return document.body.scrollHeight")
@@ -171,9 +267,6 @@ class ProductScraperMediaPark:
 
     def close(self):
         self.driver.quit()
-
-
-
 
 
 

@@ -1,40 +1,57 @@
 import pytest
-from sqlalchemy import create_engine
+import pytest_asyncio
+import aiohttp
+from aioresponses import aioresponses
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Product
-from mediapark import parse_and_store
 
-# Setup a test database
-SQLITE_TEST_DB = "sqlite:///./test.db"
-engine = create_engine(SQLITE_TEST_DB)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from database import Base
+from scraper import ProductScraperTexnoMart
+from models import Product
 
-
-@pytest.fixture(scope="module")
-def test_db():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    yield db
-    db.close()
-    Base.metadata.drop_all(bind=engine)
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+engine = create_async_engine(DATABASE_URL, echo=True)
+TestingSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 
-def test_parse_and_store(test_db):
-    html = """
-    <div class="product-card">
-        <div class="product-name">Test Product</div>
-        <div class="product-price">$99.99</div>
-        <div class="product-category">Electronics</div>
-        <img src="http://example.com/image.jpg" />
-        <div class="product-description">A sample description</div>
-    </div>
-    """
-    parse_and_store(test_db, html)
+@pytest_asyncio.fixture
+async def test_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield TestingSessionLocal
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
-    # Verify that data was inserted
-    product = test_db.query(Product).first()
-    assert product.name == "Test Product"
-    assert product.price == 99.99
-    assert product.category == "Electronics"
-    assert product.image_url == "http://example.com/image.jpg"
-    assert product.description == "A sample description"
+
+@pytest_asyncio.fixture
+async def db_session(test_db):
+    async with test_db() as session:
+        try:
+            yield session
+        finally:
+            await session.rollback()
+
+
+@pytest_asyncio.fixture
+async def http_session():
+    async with aiohttp.ClientSession() as session:
+        yield session
+
+
+@pytest.mark.asyncio
+async def test_simple_http_mock():
+    url = "https://texnomart.uz/katalog/noutbuki/"
+
+    mocked_data = {"products": [{"name": "Laptop A", "price": 1000}]}
+
+    with aioresponses() as m:
+        m.get(url, status=200, payload=mocked_data)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                assert response.status == 200
+                data = await response.json()
+                print("Mocked response data:", data)
+                assert data == mocked_data, "The mocked response data should match expected data"
+

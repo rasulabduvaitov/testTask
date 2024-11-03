@@ -62,17 +62,17 @@ class ProductScraperTexnoMart:
                 "name": name,
                 "price": price,
                 "image_url": image_url,
-                "category": category,  # Pass the category extracted from the URL
+                "category": category,
                 "description": description_text,
             })
 
         await self.save_to_db(products)
+        print(f"Successfully fetched {products}")
         return products
 
     def category_from_url(self, url):
-        """Extracts the category name from the URL."""
         path = urlparse(url).path
-        category = path.split('/')[2]  # Assumes the category is the second segment in the URL path
+        category = path.split('/')[2]
         return category.replace("-", " ").capitalize()
 
     async def save_to_db(self, products):
@@ -94,7 +94,6 @@ class ProductScraperTexnoMart:
             tasks = [self.extract_product_data(url, session) for url in urls]
             results = await asyncio.gather(*tasks)
 
-            # Flatten the list of results
             for product_list in results:
                 self.products_data.extend(product_list)
 
@@ -158,9 +157,8 @@ class ProductScraperTexnoMart:
 #         return products_data
 #
 #     def category_from_url(self, url):
-#         """Extracts the category name from the URL."""
 #         path = urlparse(url).path
-#         category = path.split('/')[3]  # Assumes the category is the third segment in the URL path
+#         category = path.split('/')[3]
 #         return category.replace("-", " ").capitalize()
 #
 #     def save_to_db(self, products):
@@ -188,21 +186,17 @@ class ProductScraperMediaPark:
     if you run locally comment this class and uncomment ↑
     '''
     def __init__(self, headless=True):
-        # Configure options for headless mode if required
         chrome_options = Options()
         if headless:
             chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
 
-        # Set up ChromeDriver and Chrome paths from environment
         chrome_driver_path = os.getenv("CHROME_DRIVER", "/usr/bin/chromedriver")
         chrome_options.binary_location = os.getenv("CHROME_BIN", "/usr/bin/chromium")
 
-        # Use Service to specify the path to ChromeDriver
         service = Service(chrome_driver_path)
 
-        # Initialize the WebDriver with the service and options
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
 
     def scroll_to_load_all_content(self, scroll_pause_time=2):
@@ -247,9 +241,8 @@ class ProductScraperMediaPark:
         return products_data
 
     def category_from_url(self, url):
-        """Extracts the category name from the URL."""
         path = urlparse(url).path
-        category = path.split('/')[3]  # Assumes the category is the third segment in the URL path
+        category = path.split('/')[3]
         return category.replace("-", " ").capitalize()
 
     def save_to_db(self, products):

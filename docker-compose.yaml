@@ -21,7 +21,7 @@ services:
       dockerfile: Dockerfile
     entrypoint: /app/docker-entrypoint.sh
     env_file:
-      - .env  # Ensure this .env file has all necessary environment variables, including DB settings
+      - .env
     ports:
       - "${DOCKER_BACKEND_PORT:-8000}:8000"
     networks:
